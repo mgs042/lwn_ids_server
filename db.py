@@ -12,30 +12,31 @@ class database:
         self.cursor.execute("""
         CREATE TABLE IF NOT EXISTS location_cache (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            latitude REAL NOT NULL,
-            longitude REAL NOT NULL,
+            name TEXT NOT NULL,
+            eui TEXT NOT NULL,
             address TEXT NOT NULL,
-            UNIQUE(latitude, longitude)
+            sim_number TEXT
+            UNIQUE(name, eui)
         )
         """)
         self.conn.commit()
     
     # Fetch location from the database
-    def fetch_from_db(self, latitude, longitude):
+    def fetch_location(self, eui):
         self.cursor.execute("""
         SELECT address FROM location_cache
-        WHERE latitude = ? AND longitude = ?
-        """, (latitude, longitude))
+        WHERE eui = ?
+        """, (eui))
         result = self.cursor.fetchone()
         return result[0] if result else None
     
     # Save location to the database
-    def save_to_db(self, latitude, longitude, address):
+    def save_to_db(self, name, eui, address, sim_number):
         try:
             self.cursor.execute("""
-            INSERT OR IGNORE INTO location_cache (latitude, longitude, address)
-            VALUES (?, ?, ?)
-            """, (latitude, longitude, address))
+            INSERT OR IGNORE INTO location_cache (name, eui, address, sim_number)
+            VALUES (?, ?, ?, ?)
+            """, (name, eui, address, sim_number))
             self.conn.commit()
         except sqlite3.Error as e:
             print(f"Error saving to DB: {e}")

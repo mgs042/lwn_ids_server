@@ -1,6 +1,7 @@
 from flask import Flask, request, Response, render_template
 from prometheus_client import Gauge, Counter, generate_latest, CONTENT_TYPE_LATEST
 from location import rev_geocode
+from db import database
 
 app = Flask(__name__)
 
@@ -48,12 +49,6 @@ def data():
             print(f"KeyError encountered: {e}")
             gateway_id = "Unknown"
         try:
-            coordinates = data['rxInfo'][0]['location']
-            location = rev_geocode(coordinates['latitude'], coordinates['longitude'])
-        except KeyError as e:
-            print(f"KeyError encountered: {e}")
-            location = "Unknown"
-        try:
             rssi = data['rxInfo'][0]['rssi']
         except KeyError as e:
             print(f"KeyError encountered: {e}")
@@ -68,6 +63,15 @@ def data():
         except KeyError as e:
             print(f"KeyError encountered: {e}")
             f_cnt = -1
+        with database() as db:
+            location = db.fetch_location(gateway_id)
+            if location is None:
+                try:
+                    coordinates = data['rxInfo'][0]['location']
+                    location = rev_geocode(coordinates['latitude'], coordinates['longitude'], gateway_id)
+                except KeyError as e:
+                    print(f"KeyError encountered: {e}")
+                    location = "Unknown"
         print(device_name, device_id, gateway_id, rssi, snr, f_cnt,location)
         # Update Prometheus metrics
         try:
@@ -82,4 +86,4 @@ def data():
     return '', 204  # No Content
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5000, debug=True)

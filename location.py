@@ -2,11 +2,7 @@ from geopy.geocoders import Nominatim
 import requests
 from db import database
 
-def rev_geocode(lat, long):
-    with database() as db:
-        cached_address = db.fetch_from_db(lat, long)
-        if cached_address:
-            return cached_address
+def rev_geocode(lat, long, gateway_id):
         # Initialize geolocator
         geolocator = Nominatim(user_agent="geoapi")
 
@@ -16,7 +12,8 @@ def rev_geocode(lat, long):
             address = location.raw.get('address', {})
             road = address.get('road', '')
             place = address.get('suburb', '') or address.get('town', '') or address.get('village', '') or address.get('county', '')
-            db.save_to_db(lat, long, f"{road}, {place}")  if place and road else "Location information not available"
+            with database() as db:
+                db.save_to_db("Unknown", gateway_id, f"{road}, {place}", "Unknown")  if place and road else "Location information not available"
             return f"{road}, {place}" if place and road else "Location information not available"
         except:
             # Define the API endpoint and parameters
