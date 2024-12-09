@@ -1,4 +1,4 @@
-from flask import Flask, request, Response, render_template
+from flask import Flask, request, Response, render_template, jsonify
 from prometheus_client import Gauge, Counter, generate_latest, CONTENT_TYPE_LATEST
 from location import rev_geocode
 from db import database
@@ -17,9 +17,22 @@ def register():
         g_id = request.form.get('eui')
         g_address = request.form.get('address')
         g_number = request.form.get('number')
+        with database() as db:
+            db.save_to_db(g_name, g_id, g_address, g_number)
 
         
     return render_template("index.html")
+
+@app.route('/gateways', methods=['GET'])
+def gateways():
+    return render_template("gateways.html")
+
+@app.route('/g_data', methods=["GET"])
+def g_data():
+    with database() as db:
+        rows=db.gateway_query()
+    return jsonify(rows)
+        
 
 
 @app.route('/metrics')
@@ -63,6 +76,7 @@ def data():
         except KeyError as e:
             print(f"KeyError encountered: {e}")
             f_cnt = -1
+        print(f"Debug: gateway_id={gateway_id}, type={type(gateway_id)}")
         with database() as db:
             location = db.fetch_location(gateway_id)
             if location is None:
@@ -72,7 +86,7 @@ def data():
                 except KeyError as e:
                     print(f"KeyError encountered: {e}")
                     location = "Unknown"
-        print(device_name, device_id, gateway_id, rssi, snr, f_cnt,location)
+        
         # Update Prometheus metrics
         try:
             rssi_metric.labels(device_name=device_name, device_id=device_id, gateway_id=gateway_id, location=location).set(rssi)
