@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Details</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="../static/css/device_details.css">
+</head>
+<body>
+    <h1>Device Details</h1>
+    <div class="center-container">
+        <div class="container-details">
+            <p><span class="key">Name:</span> <span class="value">{{ device.name }}</span></p>
+            <p><span class="key">Device ID:</span> <span class="value">{{ device.deviceId }}</span></p>
+            <p><span class="key">Device Profile ID:</span> <span class="value">{{ device.devProfileId }}</span></p>
+            <p><span class="key">Application ID:</span> <span class="value">{{ device.appId }}</span></p>
+            <p><span class="key">Created At:</span> <span class="value">{{ device.createdAt }}</span></p>
+            <p><span class="key">Updated At:</span> <span class="value">{{ device.updatedAt }}</span></p>
+            <p><span class="key">Last Seen At:</span> <span class="value">{{ device.lastSeenAt }}</span></p>
+            {% if device.status == "Unknown" %}
+                <p><span class="key">Device Status:</span> <span class="value">Unknown</span></p>
+            {% else %}
+                <p><span class="key">Margin:</span> <span class="value">{{ device.status.margin }}</span></p>
+                <p><span class="key">External Power Source:</span> <span class="value">{{ device.status.externalPowerSource }}</span></p>
+                <p><span class="key">Battery Level:</span> <span class="value">{{ device.status.batteryLevel }}</span></p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

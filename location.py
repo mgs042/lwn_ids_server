@@ -1,6 +1,6 @@
 from geopy.geocoders import Nominatim
 import requests
-from db import database
+from db import gateway_database
 
 def rev_geocode(lat, long, gateway_id):
         # Initialize geolocator
@@ -12,7 +12,7 @@ def rev_geocode(lat, long, gateway_id):
             address = location.raw.get('address', {})
             road = address.get('road', '')
             place = address.get('suburb', '') or address.get('town', '') or address.get('village', '') or address.get('county', '')
-            with database() as db:
+            with gateway_database() as db:
                 db.save_to_db("Unknown", gateway_id, f"{road}, {place}", "Unknown")  if place and road else "Location information not available"
             return f"{road}, {place}" if place and road else "Location information not available"
         except:
