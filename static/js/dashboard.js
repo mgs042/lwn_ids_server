@@ -10,12 +10,14 @@
       new Chart(doughnutChartCanvas, {
         type: 'doughnut',
         data: {
-          labels: ["Paypal", "Stripe","Cash"],
+          labels: ["Offline", "Online","Never Seen"],
           datasets: [{
-              data: [55, 25, 20],
+              data: [d_status.offline, d_status.online, d_status.never_seen],
               backgroundColor: [
-                 "#111111","#00d25b","#ffab00",
-              ],
+                "#cc0000", // Muted Red
+                "#008000", // Dark Green
+                "#ff8c00"  // Dark Orange
+            ],
               borderColor: "#191c24"
           }]
         },
