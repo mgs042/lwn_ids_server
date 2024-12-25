@@ -1,24 +1,29 @@
 from flask import Flask, request, Response, render_template, jsonify, redirect, url_for
 from flask_cors import CORS
+import os
 from prometheus_client import Gauge, Counter, generate_latest, CONTENT_TYPE_LATEST
-from location import rev_geocode
-from db import gateway_database, device_database
+from db import gateway_database, device_database, alert_database
 from dotenv import load_dotenv
 from gateway_api import get_gateway_details, get_gateway_metrics, get_gateways_status
-from device_api import get_dev_details
+from device_api import get_dev_details, get_dev_status
+from celery_tasks import celery_init_app, update_prometheus
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
-rssi_metric = Gauge("rssi", "Received Signal Strength Indicator", ["device_name", "device_id", "gateway_name", "gateway_id", "gateway_location"])
-snr_metric = Gauge("snr", "Signal-to-Noise Ratio", ["device_name", "device_id", "gateway_name", "gateway_id", "gateway_location"])
-frame_count = Gauge("frame_count", "Frame count per device", ["device_name", "device_id", "gateway_name", "gateway_id", "gateway_location"])
-uplink_received = Counter("uplink_received_total", "Total uplinks received", ["device_name", "device_id", "gateway_name", "gateway_id", "gateway_location"])
+app.config.from_mapping(
+    CELERY=dict(
+        broker_url=os.getenv('BROKER_URL'),
+        result_backend=None,
+        task_ignore_result=True,
+    ),
+)
+celery_app = celery_init_app(app)
 
 
 @app.route('/', methods=['GET'])
 def index():
-    return render_template("index.html", gateway_status = get_gateways_status())
+    return render_template("index.html", gateway_status = get_gateways_status(), device_status = get_dev_status())
 
 @app.route('/gateway_registration', methods=['GET', 'POST'])
 def gateway_register():
@@ -40,8 +45,9 @@ def dev_register():
         d_name = request.form.get('name')
         d_id = request.form.get('eui')
         d_addr = request.form.get('addr')
+        d_up_int = request.form.get('up_int')
         with device_database() as db:
-            result=db.device_write(d_name, d_id, d_addr)
+            result=db.device_write(d_name, d_id, d_addr, d_up_int)
         return redirect(url_for('devices'))
         
     return render_template("device_reg.html")
@@ -117,73 +123,28 @@ def data():
     if event_type == 'up':
         #Recieve and process JSON data
         data = request.get_json()
-        try:
-            device_name = data['deviceInfo']['deviceName']
-        except KeyError as e:
-            print(f"KeyError encountered: {e}")
-            device_name = "Unknown"
-        try:
-            device_id = data['deviceInfo']['devEui']
-        except KeyError as e:
-            print(f"KeyError encountered: {e}")
-            device_id = "Unknown"
-        try:
-            device_addr = data['devAddr']
-            with device_database() as db:
-                check = db.check_device_registered(device_id)
-                if check == 0:
-                    pass
-                elif not db.check_device_addr(device_id):
-                    db.set_dev_addr(device_id, device_addr)
-                    print("Device Address Recorded")
-        except KeyError as e:
-            print(f"KeyError encountered: {e}")
-            device_addr = "Unknown"
-        try:
-            gateway_id = data['rxInfo'][0]['gatewayId']
-        except KeyError as e:
-            print(f"KeyError encountered: {e}")
-            gateway_id = "Unknown"
-        try:
-            rssi = data['rxInfo'][0]['rssi']
-        except KeyError as e:
-            print(f"KeyError encountered: {e}")
-            rssi = 0
-        try:
-            snr = data['rxInfo'][0]['snr']
-        except KeyError as e:
-            print(f"KeyError encountered: {e}")
-            snr = 0
-        try:
-            f_cnt = data['fCnt']
-        except KeyError as e:
-            print(f"KeyError encountered: {e}")
-            f_cnt = -1
-        with gateway_database() as db:
-            gateway_location = db.fetch_gateway_location(gateway_id)
-            gateway_name = db.fetch_gateway_name(gateway_id)
-            if gateway_location is None:
-                try:
-                    coordinates = data['rxInfo'][0]['location']
-                    gateway_location = rev_geocode(coordinates['latitude'], coordinates['longitude'], gateway_id)
-                except KeyError as e:
-                    print(f"KeyError encountered: {e}")
-                    gateway_location = "Unknown"
-        print("Device Name: "+device_name)
-        print("Device Id: "+device_id)
-        print("Gateway Name: "+gateway_name)
-        print("Gateway Id: "+gateway_id)
-        print("Gateway Location: "+gateway_location)
-        rssi_metric.labels(device_name=device_name, device_id=device_id, gateway_name=gateway_name, gateway_id=gateway_id, gateway_location=gateway_location).set(rssi)
-        snr_metric.labels(device_name=device_name, device_id=device_id, gateway_name=gateway_name, gateway_id=gateway_id, gateway_location=gateway_location).set(snr)
-        frame_count.labels(device_name=device_name, device_id=device_id, gateway_name=gateway_name, gateway_id=gateway_id, gateway_location=gateway_location).set(f_cnt)
-        uplink_received.labels(device_name=device_name, device_id=device_id, gateway_name=gateway_name, gateway_id=gateway_id, gateway_location=gateway_location).inc()
+        device_name = data.get('deviceInfo', {}).get('deviceName', 'Unknown')
+        device_id = data.get('deviceInfo', {}).get('devEui', 'Unknown')
+        device_addr = data.get('devAddr', 'Unknown')
+        gateway_id = data.get('rxInfo', [{}])[0].get('gatewayId', 'Unknown')
+        rssi = data.get('rxInfo', [{}])[0].get('rssi', 0)
+        snr = data.get('rxInfo', [{}])[0].get('snr', 0)
+        f_cnt = data.get('fCnt', -1)
+        coordinates = data.get('rxInfo', [{}])[0].get('location', 'Unknown')
+        # Metrics data
+        metrics_data = {
+            'device_name': device_name,
+            'device_id': device_id,
+            'gateway_id': gateway_id,
+            'rssi': rssi,
+            'snr': snr,
+            'f_cnt': f_cnt
+        }
+        
         # Update Prometheus metrics
-        try:
-            rssi_metric.labels(device_name=device_name, device_id=device_id, gateway_name=gateway_name, gateway_id=gateway_id, gateway_location=gateway_location).set(rssi)
-            snr_metric.labels(device_name=device_name, device_id=device_id, gateway_name=gateway_name, gateway_id=gateway_id, gateway_location=gateway_location).set(snr)
-            frame_count.labels(device_name=device_name, device_id=device_id, gateway_name=gateway_name, gateway_id=gateway_id, gateway_location=gateway_location).set(f_cnt)
-            uplink_received.labels(device_name=device_name, device_id=device_id, gateway_name=gateway_name, gateway_id=gateway_id, gateway_location=gateway_location).inc()
+        try:   
+            update_prometheus(metrics_data, coordinates, device_addr)
+            
         except Exception as e:
             print(f"Error updating metrics: {e}")
             return '', 500  # Internal Server Error
@@ -208,13 +169,10 @@ def data():
         with device_database() as db:
             if db.check_device_registered(device_id):
                 print("Join Request Replay")
+                with alert_database() as db2:
+                    db2.alert_write(device_name, device_id, "Join Request Replay")
             else:
-                db.device_write(device_name, device_id, device_addr)
-        print("Device Name: "+device_name)
-        print("Device Id: "+device_id)
-        print("Gateway Name: "+gateway_name)
-        print("Gateway Id: "+gateway_id)
-        print("Gateway Location: "+gateway_location)
+                db.device_write(device_name, device_id, device_addr, 60)
 
     return '', 204  # No Content
 

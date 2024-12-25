@@ -106,6 +106,7 @@ class device_database:
             name TEXT NOT NULL,
             eui TEXT NOT NULL,
             dev_addr TEXT,
+            uplink_interval INTEGER NOT NULL,
             UNIQUE(name, eui)
         )
         """)
@@ -146,20 +147,20 @@ class device_database:
 
     
     # Save device to the database
-    def device_write(self, name, eui, dev_addr):
+    def device_write(self, name, eui, dev_addr, uplink_interval):
         check=self.check_device_registered(eui)
         if check == 0:
             try:
                 self.cursor.execute("""
-                INSERT OR IGNORE INTO device (name, eui, dev_addr)
-                VALUES (?, ?, ?)
-                """, (name, eui, dev_addr))
+                INSERT OR IGNORE INTO device (name, eui, dev_addr, uplink_interval)
+                VALUES (?, ?, ?, ?)
+                """, (name, eui, dev_addr, uplink_interval))
                 self.conn.commit()
-                return "device Registered"
+                return "Device Registered"
             except sqlite3.Error as e:
                 print(f"Error saving to DB: {e}")
         else:
-            return "device Already Registered"
+            return "Device Already Registered"
 
     def device_query(self):
         try:
@@ -173,6 +174,65 @@ class device_database:
         
 
     # Destroyer method to close the connection
+    def close(self):
+        if self.conn:
+            self.cursor.close()
+            self.conn.close()
+            print("Database connection closed.")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+
+class alert_database:
+    db_file = "alert.db"
+    def __init__(self):
+        self.conn = sqlite3.connect(self.db_file)
+        self.cursor = self.conn.cursor()
+        self.initialize_alert_db()
+
+    def initialize_alert_db(self):    
+        # Create a table if it doesn't exist
+        self.cursor.execute("""
+        CREATE TABLE IF NOT EXISTS alert (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            eui TEXT NOT NULL,
+            message TEXT NOT NULL
+        )
+        """)
+        self.conn.commit()
+
+    # Check if Alert is the database
+    def check_alert_registered(self, eui, message):
+        self.cursor.execute("""
+        SELECT name FROM alert
+        WHERE eui = ? AND message = ?
+        """, (eui, message,))
+        result = self.cursor.fetchone()
+        return result is not None
+
+     # Save alert to the database
+    def alert_write(self, name, eui, message):
+        
+        if not self.check_alert_registered(eui, message):
+            try:
+                self.cursor.execute("""
+                INSERT OR IGNORE INTO alert (name, eui, message)
+                VALUES (?, ?, ?)
+                """, (name, eui, message))
+                self.conn.commit()
+                return "Alert Registered"
+            except sqlite3.Error as e:
+                print(f"Error saving to DB: {e}")
+        else:
+            return "Alert Already Registered"
+
+    
+
+        # Destroyer method to close the connection
     def close(self):
         if self.conn:
             self.cursor.close()

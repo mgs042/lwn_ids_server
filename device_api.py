@@ -2,9 +2,10 @@ import grpc
 from google.protobuf.json_format import MessageToJson
 from chirpstack_api import api
 from google.protobuf.timestamp_pb2 import Timestamp
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 import os
+from application_api import get_application_list
 
 def convert_to_readable_format(timestamp_str, offset_hours=5, offset_minutes=30):
     # Parse the ISO 8601 timestamp (e.g., 2024-12-11T10:34:23.225809Z)
@@ -17,6 +18,70 @@ def convert_to_readable_format(timestamp_str, offset_hours=5, offset_minutes=30)
     # Convert to a more readable format (e.g., 2024-12-11 16:15:23)
     return dt.strftime("%Y-%m-%d %H:%M:%S")
 
+def checkInactive(last_seen_str):
+    # Parse the UTC string to a datetime object
+    last_seen_time = datetime.fromisoformat(last_seen_str.rstrip('Z')).replace(tzinfo=timezone.utc)
+    # Get the current UTC time with timezone info
+    current_time = datetime.now(timezone.utc)
+
+    # Check if the last seen time is within 1 hour of the current time
+    time_difference = current_time - last_seen_time
+
+    if abs(time_difference) >= timedelta(hours=1):
+        return True
+    else:
+        return False
+
+
+def get_dev_list():
+    # Get environment variables
+    api_token = os.getenv('CHIRPSTACK_APIKEY')
+    chirpstack_server = os.getenv('CHIRPSTACK_SERVER')
+    auth_token = [("authorization", "Bearer %s" % api_token)]
+    """
+    Fetches the list of a all devices in all applications under all tenants.
+    """
+    device_list=[]
+    with grpc.insecure_channel(chirpstack_server) as channel:
+        application_list=get_application_list()
+        for i in range(len(application_list)):
+             for j in range(application_list[i]["totalCount"]):
+                client = api.DeviceServiceStub(channel)
+                req = api.ListDevicesRequest()
+                req.limit=100
+                req.application_id=application_list[i]["result"][j]["id"]
+                resp = client.List(req, metadata=auth_token)
+                device_list.append(json.loads(MessageToJson(resp)))
+        return device_list
+    
+def get_dev_status():
+    # Get environment variables
+    api_token = os.getenv('CHIRPSTACK_APIKEY')
+
+    """
+    Fetches the status of a all devices in all applications under all tenants.
+    """
+    device_list = get_dev_list()
+    result = {
+                "total": 0,
+                "online": 0,
+                "offline": 0,
+                "never_seen": 0
+            }
+    for deviceset in device_list:
+        result["total"] += deviceset.get("totalCount")
+        for device in deviceset["result"]:
+            lastSeenAt = device.get("lastSeenAt", "Unknown")
+            if lastSeenAt == "Unknown":
+                result["never_seen"] += 1
+            elif checkInactive(lastSeenAt):
+                result["offline"] += 1
+            else:
+                result["online"] += 1
+            
+    return result
+
+            
 def get_dev_details(dev_eui):
      # Get environment variables
     api_token = os.getenv('CHIRPSTACK_APIKEY')

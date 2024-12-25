@@ -1,0 +1,33 @@
+# Byte-compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment directories
+env/
+w_env/
+
+# Distribution files
+build/
+dist/
+*.egg-info/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+.DS_Store
+
+# Python tools and IDEs
+.mypy_cache/
+.pytest_cache/
+.vscode/
+.idea/
+.ipynb_checkpoints/
+
+# Secrets and environment variables
+.env
+.env.*
+
+# Docker and other dev tools
+docker-compose.override.yml
