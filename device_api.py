@@ -44,14 +44,14 @@ def get_dev_list():
     device_list=[]
     with grpc.insecure_channel(chirpstack_server) as channel:
         application_list=get_application_list()
-        for i in range(len(application_list)):
-             for j in range(application_list[i]["totalCount"]):
-                client = api.DeviceServiceStub(channel)
-                req = api.ListDevicesRequest()
-                req.limit=100
-                req.application_id=application_list[i]["result"][j]["id"]
-                resp = client.List(req, metadata=auth_token)
-                device_list.append(json.loads(MessageToJson(resp)))
+        for application in application_list:
+            client = api.DeviceServiceStub(channel)
+            req = api.ListDevicesRequest()
+            req.limit=100
+            req.application_id=application["id"]
+            resp = client.List(req, metadata=auth_token)
+            device_list += json.loads(MessageToJson(resp))['result']
+                
         return device_list
     
 def get_dev_status():
@@ -68,16 +68,15 @@ def get_dev_status():
                 "offline": 0,
                 "never_seen": 0
             }
-    for deviceset in device_list:
-        result["total"] += deviceset.get("totalCount")
-        for device in deviceset["result"]:
-            lastSeenAt = device.get("lastSeenAt", "Unknown")
-            if lastSeenAt == "Unknown":
-                result["never_seen"] += 1
-            elif checkInactive(lastSeenAt):
-                result["offline"] += 1
-            else:
-                result["online"] += 1
+    result["total"] = len(device_list)
+    for device in device_list:
+        lastSeenAt = device.get("lastSeenAt", "Unknown")
+        if lastSeenAt == "Unknown":
+            result["never_seen"] += 1
+        elif checkInactive(lastSeenAt):
+            result["offline"] += 1
+        else:
+            result["online"] += 1
             
     return result
 

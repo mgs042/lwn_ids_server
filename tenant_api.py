@@ -16,4 +16,4 @@ def get_tenant_list():
          req = api.ListTenantsRequest()
          req.limit = 100 #mandatory if you want details
          resp = client.List(req, metadata=auth_token)
-    return resp
+    return json.loads(MessageToJson(resp))['result']

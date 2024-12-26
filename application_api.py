@@ -15,11 +15,11 @@ def get_application_list():
     application_list=[]
     with grpc.insecure_channel(chirpstack_server) as channel:
         tenant_list=get_tenant_list()
-        for i in range(tenant_list.total_count):
+        for i in range(len(tenant_list)):
                 client = api.ApplicationServiceStub(channel)
                 req = api.ListApplicationsRequest()
                 req.limit = 100 #mandatory if you want details
-                req.tenant_id = tenant_list.result[i].id
+                req.tenant_id = tenant_list[i]['id']
                 resp = client.List(req, metadata=auth_token)
-                application_list.append(json.loads(MessageToJson(resp)))
+                application_list += json.loads(MessageToJson(resp))['result']
     return application_list

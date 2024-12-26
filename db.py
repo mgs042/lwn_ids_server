@@ -171,6 +171,16 @@ class device_database:
             return result
         except sqlite3.Error as e:
             print(f"Error retrieving from DB: {e}")
+    
+    def device_up_int_query(self):
+        try:
+            self.cursor.execute("""
+            SELECT eui, uplink_interval FROM device
+            """)
+            result = self.cursor.fetchall()
+            return result
+        except sqlite3.Error as e:
+            print(f"Error retrieving from DB: {e}")
         
 
     # Destroyer method to close the connection

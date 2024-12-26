@@ -1,25 +1,29 @@
 from flask import Flask, request, Response, render_template, jsonify, redirect, url_for
 from flask_cors import CORS
 import os
-from prometheus_client import Gauge, Counter, generate_latest, CONTENT_TYPE_LATEST
+from metrics import registry
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import REGISTRY
+print(list(REGISTRY.collect()))
 from db import gateway_database, device_database, alert_database
 from dotenv import load_dotenv
 from gateway_api import get_gateway_details, get_gateway_metrics, get_gateways_status
 from device_api import get_dev_details, get_dev_status
-from celery_tasks import celery_init_app, update_prometheus
+from celery_tasks import celery_init_app, update_influx, configure_celery_beat
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 app.config.from_mapping(
     CELERY=dict(
-        broker_url=os.getenv('BROKER_URL'),
+        broker_url=f"amqp://guest:guest@{os.getenv('MESSAGE_BROKER')}//",
         result_backend=None,
         task_ignore_result=True,
     ),
 )
 celery_app = celery_init_app(app)
 
+configure_celery_beat(celery_app)
 
 @app.route('/', methods=['GET'])
 def index():
@@ -115,7 +119,8 @@ def device_data():
 
 @app.route('/metrics')
 def metrics():
-    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
+
+    return Response(generate_latest(registry), mimetype=CONTENT_TYPE_LATEST)
 
 @app.route('/data', methods=['POST'])
 def data():
@@ -143,7 +148,7 @@ def data():
         
         # Update Prometheus metrics
         try:   
-            update_prometheus(metrics_data, coordinates, device_addr)
+            update_influx.apply_async(args=[metrics_data, coordinates, device_addr])
             
         except Exception as e:
             print(f"Error updating metrics: {e}")
@@ -151,21 +156,9 @@ def data():
     elif event_type == 'join':
         #Recieve and process JSON data
         data = request.get_json()
-        try:
-            device_name = data['deviceInfo']['deviceName']
-        except KeyError as e:
-            print(f"KeyError encountered: {e}")
-            device_name = "Unknown"
-        try:
-            device_id = data['deviceInfo']['devEui']
-        except KeyError as e:
-            print(f"KeyError encountered: {e}")
-            device_id = "Unknown"
-        try:
-            device_addr = data['deviceAddr']
-        except KeyError as e:
-            print(f"KeyError encountered: {e}")
-            device_addr = "Unknown"
+        device_name = data.get('deviceInfo', {}).get('deviceName', 'Unknown')
+        device_id = data.get('deviceInfo', {}).get('devEui', 'Unknown')
+        device_addr = data.get('devAddr', 'Unknown')
         with device_database() as db:
             if db.check_device_registered(device_id):
                 print("Join Request Replay")
