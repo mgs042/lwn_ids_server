@@ -80,7 +80,7 @@ class gateway_database:
         if self.conn:
             self.cursor.close()
             self.conn.close()
-            print("Database connection closed.")
+            print("Gateway Database connection closed.")
 
     def __enter__(self):
         return self
@@ -105,6 +105,7 @@ class device_database:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             eui TEXT NOT NULL,
+            gw_name TEXT,
             dev_addr TEXT,
             uplink_interval INTEGER NOT NULL,
             UNIQUE(name, eui)
@@ -129,7 +130,7 @@ class device_database:
         WHERE eui = ?
         """, (eui,))
         result = self.cursor.fetchone()
-        return result[0] != ''
+        return result[0] != "Unknown"
 
 
     
@@ -145,16 +146,54 @@ class device_database:
         except sqlite3.Error as e:
             print(f"Error saving to DB: {e}")
 
+    # Check if Device gateway is the database
+    def check_device_gw(self, eui):
+        self.cursor.execute("""
+        SELECT gw_name FROM device
+        WHERE eui = ?
+        """, (eui,))
+        result = self.cursor.fetchone()
+        return result[0] != "Unknown"
+
+
+    
+    #Set Dev gateway
+    def set_dev_gw(self, eui, gw_name):
+        try:
+            self.cursor.execute("""
+            UPDATE device
+            SET gw_name = ?
+            WHERE eui = ?
+            """, (gw_name, eui)) 
+            self.conn.commit()  # Commit the changes to the database
+        except sqlite3.Error as e:
+            print(f"Error saving to DB: {e}")
+
+    #Get Device gateway
+    def get_dev_gw(self, eui):
+        try:
+            self.cursor.execute("""
+            SELECT gw_name from device
+            WHERE eui = ?
+            """, (eui,))
+            result = self.cursor.fetchone()
+            if result is not None:
+                return result[0]
+            else:
+                return None
+        except sqlite3.Error as e:
+            print(f"Error retrieving from DB: {e}")
+
     
     # Save device to the database
-    def device_write(self, name, eui, dev_addr, uplink_interval):
+    def device_write(self, name, eui, gw_name, dev_addr, uplink_interval):
         check=self.check_device_registered(eui)
         if check == 0:
             try:
                 self.cursor.execute("""
-                INSERT OR IGNORE INTO device (name, eui, dev_addr, uplink_interval)
-                VALUES (?, ?, ?, ?)
-                """, (name, eui, dev_addr, uplink_interval))
+                INSERT OR IGNORE INTO device (name, eui, gw_name, dev_addr, uplink_interval)
+                VALUES (?, ?, ?, ?, ?)
+                """, (name, eui, gw_name, dev_addr, uplink_interval))
                 self.conn.commit()
                 return "Device Registered"
             except sqlite3.Error as e:
@@ -175,7 +214,7 @@ class device_database:
     def device_up_int_query(self):
         try:
             self.cursor.execute("""
-            SELECT eui, uplink_interval FROM device
+            SELECT name, eui, uplink_interval FROM device
             """)
             result = self.cursor.fetchall()
             return result
@@ -188,7 +227,7 @@ class device_database:
         if self.conn:
             self.cursor.close()
             self.conn.close()
-            print("Database connection closed.")
+            print("Device Database connection closed.")
 
     def __enter__(self):
         return self
@@ -234,20 +273,57 @@ class alert_database:
                 VALUES (?, ?, ?)
                 """, (name, eui, message))
                 self.conn.commit()
-                return "Alert Registered"
+                return f"Alert Registered - {name} - {message}"
             except sqlite3.Error as e:
                 print(f"Error saving to DB: {e}")
         else:
-            return "Alert Already Registered"
-
+            return f"Alert Already Registered - {name} - {message}"
     
+    def query_alert(self, eui = None):
+        if eui is not None:
+            try:
+                self.cursor.execute("""
+                SELECT * FROM alert
+                WHERE eui = ?
+                """, (eui,))
+                result = self.cursor.fetchall()
+                return result
+            except sqlite3.Error as e:
+                print(f"Error retrieving from DB: {e}")
+        else:
+            try:
+                self.cursor.execute("""
+                SELECT * FROM alert
+                """)
+                result = self.cursor.fetchall()
+                return result
+            except sqlite3.Error as e:
+                print(f"Error retrieving from DB: {e}")
+
+
+
+
+    def remove_alert(self, eui, message):
+        try:
+            self.cursor.execute("""
+            DELETE FROM alert WHERE eui = ? AND message = ?
+            """, (eui, message))
+            self.conn.commit()
+            
+            if self.cursor.rowcount > 0:
+                return "Alert Removed"
+            else:
+                return "Alert Not Found"
+        except sqlite3.Error as e:
+            print(f"Error removing from DB: {e}")
+            return "Error occurred"
 
         # Destroyer method to close the connection
     def close(self):
         if self.conn:
             self.cursor.close()
             self.conn.close()
-            print("Database connection closed.")
+            print("Alert Database connection closed.")
 
     def __enter__(self):
         return self

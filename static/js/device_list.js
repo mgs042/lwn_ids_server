@@ -77,6 +77,8 @@ $(document).ready(function () {
 						<div class="table-data" >${row[1]}</div>
 						<div class="table-data">${row[2]}</div>
 						<div class="table-data">${row[3]}</div>
+						<div class="table-data">${row[4]}</div>
+						<div class="table-data">${row[5]}</div>
 					</div>
 				</a>`;
             tableContent.append(html); // Append the new row to the table

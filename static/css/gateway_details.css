@@ -21,20 +21,21 @@ h1{
 }
 
 .container-details {
-    background: #b9b9b9;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    max-width: 550px; /* Optional: Limit width */
+    max-width: 750px; /* Optional: Limit width */
     width: 100%;
 }
 
 .key {
     font-weight: bold;
+    color:aqua;
+    padding-right: 10px;
 }
 
 .value {
-    color: #333;
+    color: #ffffff;
 }
 
 .container {

@@ -6,6 +6,6 @@ def get_influxdb_client():
     influxdb_token = os.getenv('INFLUXDB_TOKEN')
     influxdb_org = os.getenv('INFLUXDB_ORG')
     influxdb_bucket = os.getenv('INFLUXDB_BUCKET')
-    
+    print(influxdb_token)
     client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
     return client, influxdb_bucket, influxdb_org

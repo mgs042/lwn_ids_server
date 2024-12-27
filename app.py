@@ -1,14 +1,16 @@
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv(override=True)
+
 from flask import Flask, request, Response, render_template, jsonify, redirect, url_for
 from flask_cors import CORS
-import os
-from metrics import registry
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
-from prometheus_client import REGISTRY
-print(list(REGISTRY.collect()))
 from db import gateway_database, device_database, alert_database
-from dotenv import load_dotenv
+from application_api import get_tenant_count, get_app_count
 from gateway_api import get_gateway_details, get_gateway_metrics, get_gateways_status
 from device_api import get_dev_details, get_dev_status
+from alert_api import get_alert_status
 from celery_tasks import celery_init_app, update_influx, configure_celery_beat
 
 app = Flask(__name__)
@@ -25,9 +27,9 @@ celery_app = celery_init_app(app)
 
 configure_celery_beat(celery_app)
 
-@app.route('/', methods=['GET'])
+@app.route('/dashboard', methods=['GET'])
 def index():
-    return render_template("index.html", gateway_status = get_gateways_status(), device_status = get_dev_status())
+    return render_template("dashboard.html", gateway_status = get_gateways_status(), device_status = get_dev_status(), alert_status = get_alert_status(), tenant_count=get_tenant_count(), app_count=get_app_count())
 
 @app.route('/gateway_registration', methods=['GET', 'POST'])
 def gateway_register():
@@ -48,10 +50,12 @@ def dev_register():
     if request.method == 'POST':
         d_name = request.form.get('name')
         d_id = request.form.get('eui')
-        d_addr = request.form.get('addr')
-        d_up_int = request.form.get('up_int')
+        d_gw = request.form.get('dev_gw') or "Unknown"
+        d_addr = request.form.get('addr') or "Unknown"
+        d_up_int = request.form.get('dev_up') or 60
         with device_database() as db:
-            result=db.device_write(d_name, d_id, d_addr, d_up_int)
+            result=db.device_write(d_name, d_id, d_gw, d_addr, d_up_int)
+        
         return redirect(url_for('devices'))
         
     return render_template("device_reg.html")
@@ -117,11 +121,6 @@ def device_data():
     return jsonify(rows)       
 
 
-@app.route('/metrics')
-def metrics():
-
-    return Response(generate_latest(registry), mimetype=CONTENT_TYPE_LATEST)
-
 @app.route('/data', methods=['POST'])
 def data():
     event_type = request.args.get('event')
@@ -146,7 +145,7 @@ def data():
             'f_cnt': f_cnt
         }
         
-        # Update Prometheus metrics
+        # Update device metrics
         try:   
             update_influx.apply_async(args=[metrics_data, coordinates, device_addr])
             
@@ -165,13 +164,9 @@ def data():
                 with alert_database() as db2:
                     db2.alert_write(device_name, device_id, "Join Request Replay")
             else:
-                db.device_write(device_name, device_id, device_addr, 60)
+                db.device_write(device_name, device_id, "Unknown", device_addr, 60)
 
     return '', 204  # No Content
 
 if __name__ == '__main__':
-
-    # Load environment variables
-    load_dotenv()
-
     app.run(host="0.0.0.0", port=5000, debug=True)

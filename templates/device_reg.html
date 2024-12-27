@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
-<<<<<<< HEAD
   <head>
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Gateway Registration</title>
+    <title>Device Registration</title>
     <!-- plugins:css -->
     <link rel="stylesheet" href="../static/assets/vendors/mdi/css/materialdesignicons.min.css">
     <link rel="stylesheet" href="../static/assets/vendors/ti-icons/css/themify-icons.css">
@@ -21,7 +20,9 @@
     <div class="container-scroller">
       <!-- partial:partials/_sidebar.html -->
       <nav class="sidebar sidebar-offcanvas" id="sidebar">
-
+        <div class="sidebar-brand-wrapper d-none d-lg-flex align-items-center justify-content-center fixed-top">
+          <a class="sidebar-brand brand-logo" href="dashboard.html"><img src="../static/assets/images/eye.png" alt="logo" class="ey"/></a>
+        </div>
         <ul class="nav">
           <li class="nav-item profile">
             <div class="profile-desc">
@@ -34,59 +35,13 @@
                   <span>admin</span>
                 </div>
               </div>              
-=======
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <title>Device Registration</title>
-</head>
-<body>
-    <div class="container-fluid">
-        <div class="row text-center">
-            <h2 class="col text-bg-info p-3"><u>Device Registration</u></h2>
-        </div>
-        <div class="row text-center">
-            <div class="col-3"></div>
-            <div class="col-6">
-                <br><br>
-                <form action="/device_registration" method="POST" class="p-4 bg-warning">
-                    <div class="row">
-                        <div class="col-2"></div>
-                        <label for="name" class="col-3 text-center">Device Name:</label>
-                        <input type="text" name="name" id="name" class="col-4 bg-light">
-                        <div class="col-3"></div>
-                    </div><br>
-                    <div class="row">
-                        <div class="col-2"></div>
-                        <label for="eui" class="col-3 text-center">Device EUI:</label>
-                        <input type="text" name="eui" id="eui" class="col-4 bg-light">
-                        <div class="col-3"></div>
-                    </div><br>
-                    <div class="row">
-                        <div class="col-2"></div>
-                        <label for="addr" class="col-3 text-center">Device Addr:</label>
-                        <input type="text" name="addr" id="addr" class="col-4 bg-light">
-                        <div class="col-3"></div>
-                    </div><br>
-                    <div class="row">
-                        <div class="col-2"></div>
-                        <label for="up_int" class="col-3 text-center">Uplink Interval:</label>
-                        <input type="text" name="up_int" id="up_int" class="col-4 bg-light">
-                        <div class="col-1"><p style="margin-bottom: 0;">seconds</p></div>
-                        <div class="col-2"></div>
-                    </div><br>
-                    <br><br>
-                    <input type="submit" id="submit" class="btn btn-primary" value="Submit Device">
-                    </form>
->>>>>>> 64217c330ff7830589780334573a300067c54475
             </div>
           </li>
           <li class="nav-item nav-category">
             <span class="nav-link">Navigation</span>
           </li>
           <li class="nav-item menu-items">
-            <a class="nav-link" href="/">
+            <a class="nav-link" href="/dashboard">
               <span class="menu-icon">
                 <i class="mdi mdi-speedometer"></i>
               </span>
@@ -130,72 +85,74 @@
       <!-- partial -->
       <div class="container-fluid page-body-wrapper">
         <!-- partial:partials/_navbar.html -->
-        <nav class="navbar p-0 fixed-top d-flex flex-row row">
+        <nav class="navbar p-0 fixed-top d-flex flex-row">
           <div class="navbar-menu-wrapper flex-grow d-flex align-items-stretch">
-                <div class="col-4">
-                    <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-toggle="minimize">
-                        <span class="mdi mdi-menu"></span>
-                      </button>
-                </div>
-                <div class="col-4 align-self-center">
-                    <h2 class="align-self-center"><u>Device Registration</u></h2>
-                </div>
-                <div class="col-4"></div>
+            <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-toggle="minimize">
+              <span class="mdi mdi-menu"></span>
+            </button>
+            <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button" data-toggle="offcanvas">
+              <span class="mdi mdi-format-line-spacing"></span>
+            </button>
           </div>
         </nav>
         <!-- partial -->
         <div class="main-panel">
           <div class="content-wrapper">
+            <div class="page-header">
+              <h3 class="page-title"> Device Registration </h3>
+            </div>
             <div class="row">
-                <div class="container-fluid">
-                    <div class="row text-center">
-                        <div class="col-3"></div>
-                        <div class="col-6">
-                            <br><br>
-                            <form action="/device_registration" method="POST" class="p-4 card">
-                                <div class="row">
-                                    <div class="col-2"></div>
-                                    <label for="name" class="col-3 text-end">Device Name:</label>
-                                    <input type="text" name="name" id="name" class="col-4 bg-light">
-                                    <div class="col-3"></div>
-                                </div><br>
-                                <div class="row">
-                                    <div class="col-2"></div>
-                                    <label for="eui" class="col-3 text-end">Device EUI:</label>
-                                    <input type="text" name="eui" id="eui" class="col-4 bg-light">
-                                    <div class="col-3"></div>
-                                </div><br>
-                                <div class="row">
-                                    <div class="col-2"></div>
-                                    <label for="address" class="col-3 text-end">Device Addr:</label>
-                                    <input type="text" name="addr" id="addr" class="col-4 bg-light">
-                                    <div class="col-3"></div>
-                                </div><br>
-                                <br><br>
-                                <div class="row">
-                                    <div class="col"></div>
-                                    <div class="col-4">                                
-                                        <input type="submit" id="submit" class="btn btn-primary" value="Submit Device">
-                                    </div>
-                                    <div class="col"></div>
-                                </div>
-                                </form>
+              <div class="col-md-3"></div>
+              <div class="col-md-6 grid-margin stretch-card">
+                <div class="card">
+                  <div class="card-body">
+                    <h4 class="card-title">Device Form</h4>
+                    <p class="card-description"> Enter Device Details: </p>
+                    <br>
+                    <form class="forms-sample" action="/device_registration" method="POST">
+                      <div class="form-group row">
+                        <label for="name" class="col-sm-3 col-form-label">Device Name: <span class="text-danger">*</span></label>
+                        <div class="col-sm-9">
+                          <input name="name" type="text" class="form-control" id="name" placeholder="Custom Name of Device" required>
                         </div>
-                        <div class="col-3"></div>
-                    </div>
-                    <div class="row text-center"></div>
+                      </div>
+                      <div class="form-group row">
+                        <label for="eui" class="col-sm-3 col-form-label">Device Eui: <span class="text-danger">*</span></label>
+                        <div class="col-sm-9">
+                          <input name="eui" type="text" class="form-control" id="eui" placeholder="Unique EUI of Device" required>
+                        </div>
+                      </div>
+                      <div class="form-group row">
+                        <label for="dev_gw" class="col-sm-3 col-form-label">Device Gateway:</label>
+                        <div class="col-sm-9">
+                          <input name="dev_gw" type="text" class="form-control" id="dev_gw" placeholder="Gateway of Device">
+                        </div>
+                      </div>
+                      <div class="form-group row">
+                        <label for="address" class="col-sm-3 col-form-label">Device Addr:</label>
+                        <div class="col-sm-9">
+                          <input name="address" type="text" class="form-control" id="address" placeholder="Device Address assigned by Chirpstack">
+                        </div>
+                      </div>
+                      <div class="form-group row">
+                        <label for="dev_up" class="col-sm-3 col-form-label">Uplink Interval:</label>
+                        <div class="col-sm-9">
+                          <input name="dev_up" type="text" class="form-control" id="dev_up" placeholder="Uplink Interval in seconds">
+                        </div>
+                      </div>
+                      <button type="submit" class="btn btn-primary me-2 float-end">Submit</button>
+                    </form>
+                  </div>
                 </div>
-              </div>
-            <div class="row" style="height: 193px">
+                <div class="col-md-3"></div>
             </div>
           </div>
           <!-- content-wrapper ends -->
-          <!-- partial:partials/_footer.html -->
+          <!-- partial:../../partials/_footer.html -->
           <footer class="footer">
             <div class="d-sm-flex justify-content-center justify-content-sm-between">
             </div>
           </footer>
-        </div>
           <!-- partial -->
         </div>
         <!-- main-panel ends -->
@@ -211,5 +168,7 @@
    <script src="../static/js/jquery.cookie.js" type="text/javascript"></script>
    <!-- End plugin js for this page -->
    <script src="../static/js/misc.js"></script>
+   <script src="../static/js/off-canvas.js"></script>
+
   </body>
   </html>

@@ -24,6 +24,7 @@ dist/
 .vscode/
 .idea/
 .ipynb_checkpoints/
+.__pycache__
 
 # Secrets and environment variables
 .env

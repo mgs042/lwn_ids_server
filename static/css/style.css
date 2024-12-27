@@ -107,6 +107,26 @@
 /* === Import template variables === */
 /*-------------------------------------------------------------------*/
 /* === SCSS Compass Functions === */
+
+@font-face {
+  font-family: Argus;
+  src: url('../fonts/argus.ttf');
+}
+.title {
+  font-family: Argus;
+  color: rgb(255, 255, 255);
+  position: absolute; /* Center the title absolutely */
+  left: 50%;
+  transform: translateX(-50%); /* Adjust for the title's width */
+  margin: 0;
+  font-size: 2.5rem; /* Adjust font size to make it larger */
+  font-weight: bold; /* Optional: Make the font bold for more emphasis */
+}
+.eye{
+  border-radius: 25px;
+  height: 50px;
+  width: 50px;
+}
 @-moz-keyframes flash {
   0% {
     opacity: 1;
@@ -24147,10 +24167,10 @@ dl li {
   color: #252b3e;
 }
 .sidebar .sidebar-brand-wrapper .sidebar-brand img {
-  width: calc(244px - 120px);
-  max-width: 100%;
-  height: 28px;
-  margin: auto;
+  border-radius: 0px;
+  width: 60px;
+  height: 60px;
+  margin-top: 10px;
   vertical-align: middle;
 }
 .sidebar .sidebar-brand-wrapper .sidebar-brand.brand-logo-mini {
@@ -25110,7 +25130,7 @@ dl li {
 .main-panel {
   transition: width 0.25s ease, margin 0.25s ease;
   width: 100%;
-  min-height: calc(100vh - 70px);
+  min-height: calc(100vh);
   padding-top: 70px;
   display: -webkit-flex;
   display: flex;
